@@ -1,0 +1,437 @@
+{
+  "schema": 1,
+  "reference": "https://github.com/archlinux/archinstall/tree/master/archinstall/default_profiles/desktops",
+  "checked": "2026-09-26",
+  "profiles": [
+    {
+      "id": "tty",
+      "label": "TTY minimal",
+      "packages": [
+        "vicios-base",
+        "linux",
+        "linux-firmware",
+        "grub",
+        "vos"
+      ],
+      "services": [
+        "NetworkManager"
+      ],
+      "status": "requires-built-packages",
+      "session": null
+    },
+    {
+      "id": "awesome",
+      "label": "Awesome",
+      "packages": [
+        "vicios-base",
+        "linux",
+        "linux-firmware",
+        "grub",
+        "vos",
+        "desktop-awesome"
+      ],
+      "services": [
+        "NetworkManager",
+        "display-manager"
+      ],
+      "status": "requires-built-packages",
+      "session": "awesome"
+    },
+    {
+      "id": "bspwm",
+      "label": "Bspwm",
+      "packages": [
+        "vicios-base",
+        "linux",
+        "linux-firmware",
+        "grub",
+        "vos",
+        "desktop-bspwm"
+      ],
+      "services": [
+        "NetworkManager",
+        "display-manager"
+      ],
+      "status": "requires-built-packages",
+      "session": "bspwm"
+    },
+    {
+      "id": "budgie",
+      "label": "Budgie",
+      "packages": [
+        "vicios-base",
+        "linux",
+        "linux-firmware",
+        "grub",
+        "vos",
+        "desktop-budgie"
+      ],
+      "services": [
+        "NetworkManager",
+        "display-manager"
+      ],
+      "status": "requires-built-packages",
+      "session": "budgie"
+    },
+    {
+      "id": "cinnamon",
+      "label": "Cinnamon",
+      "packages": [
+        "vicios-base",
+        "linux",
+        "linux-firmware",
+        "grub",
+        "vos",
+        "desktop-cinnamon"
+      ],
+      "services": [
+        "NetworkManager",
+        "display-manager"
+      ],
+      "status": "requires-built-packages",
+      "session": "cinnamon"
+    },
+    {
+      "id": "cosmic",
+      "label": "Cosmic",
+      "packages": [
+        "vicios-base",
+        "linux",
+        "linux-firmware",
+        "grub",
+        "vos",
+        "desktop-cosmic"
+      ],
+      "services": [
+        "NetworkManager",
+        "display-manager"
+      ],
+      "status": "requires-built-packages",
+      "session": "cosmic"
+    },
+    {
+      "id": "deepin",
+      "label": "Deepin",
+      "packages": [
+        "vicios-base",
+        "linux",
+        "linux-firmware",
+        "grub",
+        "vos",
+        "desktop-deepin"
+      ],
+      "services": [
+        "NetworkManager",
+        "display-manager"
+      ],
+      "status": "requires-built-packages",
+      "session": "deepin"
+    },
+    {
+      "id": "enlightenment",
+      "label": "Enlightenment",
+      "packages": [
+        "vicios-base",
+        "linux",
+        "linux-firmware",
+        "grub",
+        "vos",
+        "desktop-enlightenment"
+      ],
+      "services": [
+        "NetworkManager",
+        "display-manager"
+      ],
+      "status": "requires-built-packages",
+      "session": "enlightenment"
+    },
+    {
+      "id": "gnome",
+      "label": "Gnome",
+      "packages": [
+        "vicios-base",
+        "linux",
+        "linux-firmware",
+        "grub",
+        "vos",
+        "desktop-gnome"
+      ],
+      "services": [
+        "NetworkManager",
+        "display-manager"
+      ],
+      "status": "requires-built-packages",
+      "session": "gnome"
+    },
+    {
+      "id": "hyprland",
+      "label": "Hyprland",
+      "packages": [
+        "vicios-base",
+        "linux",
+        "linux-firmware",
+        "grub",
+        "vos",
+        "desktop-hyprland"
+      ],
+      "services": [
+        "NetworkManager",
+        "display-manager"
+      ],
+      "status": "requires-built-packages",
+      "session": "hyprland"
+    },
+    {
+      "id": "i3",
+      "label": "I3",
+      "packages": [
+        "vicios-base",
+        "linux",
+        "linux-firmware",
+        "grub",
+        "vos",
+        "desktop-i3"
+      ],
+      "services": [
+        "NetworkManager",
+        "display-manager"
+      ],
+      "status": "requires-built-packages",
+      "session": "i3"
+    },
+    {
+      "id": "labwc",
+      "label": "Labwc",
+      "packages": [
+        "vicios-base",
+        "linux",
+        "linux-firmware",
+        "grub",
+        "vos",
+        "desktop-labwc"
+      ],
+      "services": [
+        "NetworkManager",
+        "display-manager"
+      ],
+      "status": "requires-built-packages",
+      "session": "labwc"
+    },
+    {
+      "id": "lxqt",
+      "label": "Lxqt",
+      "packages": [
+        "vicios-base",
+        "linux",
+        "linux-firmware",
+        "grub",
+        "vos",
+        "desktop-lxqt"
+      ],
+      "services": [
+        "NetworkManager",
+        "display-manager"
+      ],
+      "status": "requires-built-packages",
+      "session": "lxqt"
+    },
+    {
+      "id": "mate",
+      "label": "Mate",
+      "packages": [
+        "vicios-base",
+        "linux",
+        "linux-firmware",
+        "grub",
+        "vos",
+        "desktop-mate"
+      ],
+      "services": [
+        "NetworkManager",
+        "display-manager"
+      ],
+      "status": "requires-built-packages",
+      "session": "mate"
+    },
+    {
+      "id": "niri",
+      "label": "Niri",
+      "packages": [
+        "vicios-base",
+        "linux",
+        "linux-firmware",
+        "grub",
+        "vos",
+        "desktop-niri"
+      ],
+      "services": [
+        "NetworkManager",
+        "display-manager"
+      ],
+      "status": "requires-built-packages",
+      "session": "niri"
+    },
+    {
+      "id": "niri_dms",
+      "label": "Niri_Dms",
+      "packages": [
+        "vicios-base",
+        "linux",
+        "linux-firmware",
+        "grub",
+        "vos",
+        "desktop-niri_dms"
+      ],
+      "services": [
+        "NetworkManager",
+        "display-manager"
+      ],
+      "status": "requires-built-packages",
+      "session": "niri_dms"
+    },
+    {
+      "id": "plasma",
+      "label": "Plasma",
+      "packages": [
+        "vicios-base",
+        "linux",
+        "linux-firmware",
+        "grub",
+        "vos",
+        "desktop-plasma"
+      ],
+      "services": [
+        "NetworkManager",
+        "display-manager"
+      ],
+      "status": "requires-built-packages",
+      "session": "plasma"
+    },
+    {
+      "id": "qtile",
+      "label": "Qtile",
+      "packages": [
+        "vicios-base",
+        "linux",
+        "linux-firmware",
+        "grub",
+        "vos",
+        "desktop-qtile"
+      ],
+      "services": [
+        "NetworkManager",
+        "display-manager"
+      ],
+      "status": "requires-built-packages",
+      "session": "qtile"
+    },
+    {
+      "id": "river",
+      "label": "River",
+      "packages": [
+        "vicios-base",
+        "linux",
+        "linux-firmware",
+        "grub",
+        "vos",
+        "desktop-river"
+      ],
+      "services": [
+        "NetworkManager",
+        "display-manager"
+      ],
+      "status": "requires-built-packages",
+      "session": "river"
+    },
+    {
+      "id": "sway",
+      "label": "Sway",
+      "packages": [
+        "vicios-base",
+        "linux",
+        "linux-firmware",
+        "grub",
+        "vos",
+        "desktop-sway"
+      ],
+      "services": [
+        "NetworkManager",
+        "display-manager"
+      ],
+      "status": "requires-built-packages",
+      "session": "sway"
+    },
+    {
+      "id": "xfce4",
+      "label": "Xfce4",
+      "packages": [
+        "vicios-base",
+        "linux",
+        "linux-firmware",
+        "grub",
+        "vos",
+        "desktop-xfce4"
+      ],
+      "services": [
+        "NetworkManager",
+        "display-manager"
+      ],
+      "status": "requires-built-packages",
+      "session": "xfce4"
+    },
+    {
+      "id": "xmonad",
+      "label": "Xmonad",
+      "packages": [
+        "vicios-base",
+        "linux",
+        "linux-firmware",
+        "grub",
+        "vos",
+        "desktop-xmonad"
+      ],
+      "services": [
+        "NetworkManager",
+        "display-manager"
+      ],
+      "status": "requires-built-packages",
+      "session": "xmonad"
+    },
+    {
+      "id": "driftwm",
+      "label": "Driftwm",
+      "packages": [
+        "vicios-base",
+        "linux",
+        "linux-firmware",
+        "grub",
+        "vos",
+        "desktop-driftwm"
+      ],
+      "services": [
+        "NetworkManager",
+        "display-manager"
+      ],
+      "status": "experimental",
+      "session": "driftwm"
+    },
+    {
+      "id": "hyprland-vicios-custom",
+      "label": "Hyprland Vicios Custom",
+      "packages": [
+        "vicios-base",
+        "linux",
+        "linux-firmware",
+        "grub",
+        "vos",
+        "desktop-hyprland-vicios-custom"
+      ],
+      "services": [
+        "NetworkManager",
+        "display-manager"
+      ],
+      "status": "requires-built-packages",
+      "session": "hyprland-vicios-custom"
+    }
+  ]
+}

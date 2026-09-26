@@ -1,0 +1,9 @@
+{
+  "status": "awaiting-current-config-export",
+  "desktop_package": "desktop-hyprland-vicios-custom",
+  "required_packages": ["hyprland", "quickshell", "waybar", "rofi", "swaync", "alacritty", "nautilus", "hyprpaper", "hyprshutdown", "network-manager-applet", "pipewire", "wireplumber", "xdg-desktop-portal-hyprland", "xdg-desktop-portal-gtk", "polkit", "polkit-agent", "playerctl", "jq", "zen-browser", "vicios-dotfiles"],
+  "preserve": ["SUPER+Q terminal", "SUPER+E files", "SUPER+M exit", "SUPER+V floating", "SUPER+R launcher", "SUPER+W Waybar", "SUPER+N notifications", "SUPER+SPACE themes", "SUPER+TAB overview", "SUPER+D music island", "SUPER+B Zen", "SUPER+F fullscreen", "SUPER+1..9 workspaces", "SUPER+SHIFT+1..9 move window"],
+  "widgets": ["music-island", "theme-switcher", "vicios-overview", "swaync"],
+  "display_policy": "auto-detect on new hardware; optional two-monitor profile with fixed workspace 10; never hardcode another machine's connectors",
+  "required_input": "archive from tools/export-custom-config.sh including current Lua/Quickshell and referenced wallpapers"
+}

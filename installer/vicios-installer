@@ -1,0 +1,145 @@
+#!/usr/bin/env python3
+"""TTY installer. Default: print a plan. --apply enables explicit disk installation.
+Packages must already exist as a complete signed ViciOS repository.
+"""
+import argparse, getpass, json, os, pathlib, re, shutil, subprocess, sys, tempfile
+BASE=pathlib.Path(__file__).resolve().parents[1]
+CATALOG=BASE/'profiles/catalog.json'
+
+def run(*args, **kwargs):
+    return subprocess.run([str(x) for x in args],check=True,**kwargs)
+def capture(*args): return run(*args,capture_output=True,text=True).stdout.strip()
+def profiles(): return json.loads(CATALOG.read_text())['profiles']
+def validate(args):
+    if not re.fullmatch(r'[a-z_][a-z0-9_-]{0,30}', args.user): raise ValueError('invalid username')
+    if not re.fullmatch(r'[a-zA-Z0-9][a-zA-Z0-9-]{0,62}', args.hostname): raise ValueError('invalid hostname')
+    zone=pathlib.Path('/usr/share/zoneinfo')/args.timezone
+    if '..' in pathlib.Path(args.timezone).parts or args.timezone.startswith('/') or not zone.is_file(): raise ValueError('invalid timezone')
+    if args.boot not in ('uefi','bios'): raise ValueError('choose uefi or bios')
+    profile=next((p for p in profiles() if p['id']==args.profile),None)
+    if profile is None: raise ValueError('unknown profile')
+    return profile
+
+def disk_info(disk):
+    disk=str(pathlib.Path(disk).resolve())
+    data=json.loads(capture('lsblk','-J','-b','-o','PATH,TYPE,SIZE,MOUNTPOINTS,RO',disk))
+    rows=data['blockdevices']
+    if len(rows)!=1 or rows[0]['type']!='disk' or rows[0]['ro']: raise ValueError('select one writable whole disk')
+    if rows[0]['size']<8*1024**3: raise ValueError('disk smaller than 8 GiB')
+    def check(row):
+        if any(row.get('mountpoints') or []): raise ValueError('disk has mounted partitions; unmount it first')
+        if row.get('type') in ('crypt','lvm','raid','raid1'): raise ValueError('LVM/RAID/crypt target not supported')
+        for child in row.get('children',[]): check(child)
+    check(rows[0]); return disk
+
+def layout_plan(profile,args):
+    return {'profile':profile['id'],'packages':profile['packages'],'boot':args.boot,'filesystem':'ext4',
+            'partition_table':'GPT','partitions':['1 GiB EFI FAT32','remaining ext4'] if args.boot=='uefi' else ['2 MiB BIOS boot','remaining ext4'],
+            'user':args.user,'hostname':args.hostname,'timezone':args.timezone,'disk':args.disk,'destroys_selected_disk':True}
+
+def stage_root(stage,args,profile):
+    (stage/'etc/vos').mkdir(parents=True)
+    cfg=json.loads(pathlib.Path(args.repo_config).read_text())
+    if not cfg['index_url'].startswith('https://'): raise ValueError('installer requires a persistent HTTPS repository URL')
+    (stage/'etc/vos/repos.json').write_text(json.dumps(cfg,indent=2)+'\n')
+    run(args.vos,'--root',stage,'install',*profile['packages'])
+    required=['usr/bin/bash','usr/bin/true','usr/bin/passwd','usr/sbin/useradd','usr/sbin/chpasswd','usr/bin/systemctl','usr/lib/systemd/systemd','usr/bin/dracut','usr/sbin/grub-install','usr/sbin/grub-mkconfig','boot/vmlinuz','etc/os-release']
+    missing=[p for p in required if not (stage/p).is_file()]
+    if missing: raise ValueError('repository is not an installable OS; missing: '+', '.join(missing))
+    if 'ID=vicios' not in (stage/'etc/os-release').read_text(): raise ValueError('os-release must identify ViciOS')
+    for foreign in ['usr/bin/pacman','usr/bin/dnf','usr/bin/apt','usr/bin/xbps-install']:
+        if (stage/foreign).exists(): raise ValueError('foreign package manager present in rootfs')
+    for name,target in [('bin','usr/bin'),('sbin','usr/sbin'),('lib','usr/lib'),('lib64','usr/lib64')]:
+        if not (stage/name).is_symlink() and not (stage/name).exists(): (stage/name).symlink_to(target)
+    for name in ('dev','proc','sys','run','tmp','home','root','var','boot/efi'): (stage/name).mkdir(parents=True,exist_ok=True)
+    (stage/'tmp').chmod(0o1777)
+    # Requires binaries built for this rootfs, not accidentally linked to builder-only libraries.
+    run('chroot',stage,'/usr/bin/true')
+    if profile['session'] and not list((stage/'usr/share').glob('*sessions/*.desktop')):
+        raise ValueError('desktop package provides no login session')
+
+def apply(args,profile):
+    if os.geteuid()!=0: raise ValueError('--apply requires root from live media')
+    if not sys.stdin.isatty(): raise ValueError('interactive TTY confirmation is required')
+    for tool in ('lsblk','wipefs','sgdisk','partprobe','udevadm','mkfs.ext4','mount','umount','blkid','chroot','rsync'):
+        if not shutil.which(tool): raise ValueError('missing live tool: '+tool)
+    if args.boot=='uefi' and (not pathlib.Path('/sys/firmware/efi').exists() or not shutil.which('mkfs.fat')): raise ValueError('boot live media in UEFI and install mkfs.fat')
+    if not args.disk: raise ValueError('--disk is required')
+    disk=disk_info(args.disk)
+    print('Downloading and validating the COMPLETE system before modifying the disk.')
+    with tempfile.TemporaryDirectory(prefix='vicios-stage-') as td:
+        stage=pathlib.Path(td); stage_root(stage,args,profile)
+        password=getpass.getpass('Password for new user: ')
+        if not password or password!=getpass.getpass('Repeat password: '): raise ValueError('passwords do not match or are empty')
+        print(json.dumps(layout_plan(profile,args),indent=2))
+        print('ALL DATA ON '+disk+' WILL BE ERASED.')
+        if input('Type ERASE '+disk+': ')!='ERASE '+disk: raise ValueError('cancelled')
+        disk_info(disk) # Recheck immediately before partitioning.
+        run('wipefs','--all',disk); run('sgdisk','--zap-all',disk)
+        if args.boot=='uefi': run('sgdisk','-n','1:0:+1G','-t','1:ef00','-n','2:0:0','-t','2:8300',disk)
+        else: run('sgdisk','-n','1:0:+2M','-t','1:ef02','-n','2:0:0','-t','2:8300',disk)
+        run('partprobe',disk); run('udevadm','settle')
+        prefix=disk+('p' if disk[-1].isdigit() else '')
+        rootpart=prefix+'2'; esp=prefix+'1'
+        run('mkfs.ext4','-F','-L','ViciOS',rootpart)
+        target=pathlib.Path('/mnt/vicios-install'); target.mkdir(parents=True,exist_ok=True)
+        mounts=[]
+        try:
+            run('mount',rootpart,target); mounts.append(target)
+            run('rsync','-aH',str(stage)+'/',str(target)+'/')
+            if args.boot=='uefi':
+                run('mkfs.fat','-F','32',esp); run('mount',esp,target/'boot/efi'); mounts.append(target/'boot/efi')
+            rootuuid=capture('blkid','-s','UUID','-o','value',rootpart)
+            fstab=f'UUID={rootuuid} / ext4 defaults 0 1\n'
+            if args.boot=='uefi': fstab+=f'UUID={capture("blkid","-s","UUID","-o","value",esp)} /boot/efi vfat umask=0077 0 2\n'
+            (target/'etc/fstab').write_text(fstab)
+            (target/'etc/hostname').write_text(args.hostname+'\n')
+            (target/'etc/hosts').write_text(f'127.0.0.1 localhost\n::1 localhost\n127.0.1.1 {args.hostname}\n')
+            tz=target/'usr/share/zoneinfo'/args.timezone
+            if not tz.is_file(): raise ValueError('timezone data missing in target')
+            localtime=target/'etc/localtime'; localtime.unlink(missing_ok=True); localtime.symlink_to('../usr/share/zoneinfo/'+args.timezone)
+            for fs in ('dev','proc','sys','run'):
+                run('mount','--rbind','/'+fs,target/fs); mounts.append(target/fs); run('mount','--make-rslave',target/fs)
+            def ch(*cmd,**kw): return run('chroot',target,*cmd,**kw)
+            ch('/usr/sbin/useradd','-m','-G','wheel','-s','/bin/bash',args.user)
+            ch('/usr/sbin/chpasswd',input=f'{args.user}:{password}\n',text=True)
+            ch('/usr/bin/passwd','-l','root')
+            sudoers=target/'etc/sudoers.d/10-vicios-wheel'; sudoers.parent.mkdir(exist_ok=True); sudoers.write_text('%wheel ALL=(ALL:ALL) ALL\n'); sudoers.chmod(0o440)
+            for service in profile['services']: ch('/usr/bin/systemctl','enable',service)
+            kernel_dirs=sorted((target/'usr/lib/modules').iterdir())
+            if len(kernel_dirs)!=1: raise ValueError('initial install must contain exactly one kernel version')
+            ch('/usr/bin/dracut','--force','--no-hostonly','/boot/initramfs.img',kernel_dirs[0].name)
+            if args.boot=='uefi': ch('/usr/sbin/grub-install','--target=x86_64-efi','--efi-directory=/boot/efi','--bootloader-id=ViciOS','--removable')
+            else: ch('/usr/sbin/grub-install','--target=i386-pc',disk)
+            grub=target/'boot/grub/grub.cfg'; grub.parent.mkdir(parents=True,exist_ok=True)
+            grub.write_text(f'set timeout=3\nmenuentry "ViciOS" {{\n search --no-floppy --fs-uuid --set=root {rootuuid}\n linux /boot/vmlinuz root=UUID={rootuuid} rw\n initrd /boot/initramfs.img\n}}\n')
+            if profile['session']: ch('/usr/bin/systemctl','set-default','graphical.target')
+            ch('/usr/bin/systemd-machine-id-setup')
+            os.sync()
+            print('Installation finished. Remove live media and reboot. Hardware/desktop boot must still be verified.')
+        finally:
+            for path in reversed(mounts): subprocess.run(['umount','-R',str(path)],check=False)
+
+def main():
+    p=argparse.ArgumentParser(description=__doc__)
+    p.add_argument('--list-profiles',action='store_true'); p.add_argument('--profile'); p.add_argument('--disk')
+    p.add_argument('--boot',choices=['uefi','bios'],default='uefi' if pathlib.Path('/sys/firmware/efi').exists() else 'bios')
+    p.add_argument('--user',default='vicios'); p.add_argument('--hostname',default='vicios'); p.add_argument('--timezone',default='Europe/Bucharest')
+    p.add_argument('--vos',default='vos'); p.add_argument('--repo-config',default='/etc/vos/repos.json'); p.add_argument('--apply',action='store_true')
+    args=p.parse_args()
+    if args.list_profiles:
+        for profile in profiles(): print(f"{profile['id']:25} {profile['status']}")
+        return
+    if not args.profile:
+        if not sys.stdin.isatty(): p.error('--profile required outside TTY')
+        choices=profiles()
+        for i,profile in enumerate(choices,1): print(f"{i:2}. {profile['label']} [{profile['status']}]")
+        choice=int(input('Desktop number: '))
+        if not 1<=choice<=len(choices): raise ValueError('invalid selection')
+        args.profile=choices[choice-1]['id']
+    profile=validate(args)
+    if args.apply: apply(args,profile)
+    else: print(json.dumps(layout_plan(profile,args),indent=2))
+if __name__=='__main__':
+    try: main()
+    except (ValueError, subprocess.CalledProcessError, OSError) as e: print('vicios-installer:',e,file=sys.stderr); sys.exit(1)
